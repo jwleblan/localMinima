@@ -43,8 +43,8 @@ function localMinimaDetectionPoster()
 N = 100;
 thetaTrue = 3*pi;
 sigmaN = 1;
-numTrials = 500;			% 5000 was used for publication (~2hrs)
-numRelaxationDims = 5;      % Must be 1 to get the 3D plot (2 and 3 are better)
+numTrials = 5000;			% 5000 was used for publication (~2hrs)
+numRelaxationDims = 0;      % Must be 1 to get the 3D plot (2 and 3 are better)
 rng(0);                     % For total reproducability
 
 % Setup the forward model
@@ -119,7 +119,12 @@ end
 
 % Setup the tests.  The argument to leblancTest is the number
 testArray = {@biernackiTest, leblancTest(numRelaxationDims)};
-testNameArray = {'biernacki',sprintf('leblanc(%g)',numRelaxationDims)};
+
+if numRelaxationDims>0
+    testNameArray = {'Biernacki',sprintf('leblanc(%g)',numRelaxationDims)};
+else
+    testNameArray = {'Biernacki','Biernacki one-sided'};
+end
 
 disp('Running Monte Simulations...');
 for testInd = 1:numel(testArray)
