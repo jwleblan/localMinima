@@ -44,7 +44,7 @@ N = 100;
 thetaTrue = 3*pi;
 sigmaN = 1;
 numTrials = 5000;			% 5000 was used for publication (~2hrs)
-numRelaxationDims = 0;      % Must be 1 to get the 3D plot (2 and 3 are better)
+numRelaxationDims = 1;      % Must be 1 to get the 3D plot (2 and 3 are better)
 rng(0);                     % For total reproducability
 
 % Setup the forward model
@@ -69,7 +69,7 @@ xlabel('x');
 ylabel('E[d]');
 hLegend = legend({...
     '$E[d(\theta_0)]$',...
-    '$E[d(\hat\theta \neq \theta_0)]$' });
+    '$E[d(\hat\theta)]:  \hat\theta \neq \theta_0$' });
 set(hLegend,'Interpreter','latex');
 title('Expected signal at two stationary points');
 prepareFigure();
@@ -85,10 +85,47 @@ xlabel('x');
 ylabel('d');
 hLegend = legend({...
     '$d(\theta_0)$',...
-    '$d(\hat\theta \neq \theta_0)$' });
+    '$d(\hat\theta):  \hat\theta \neq \theta_0$' });
 set(hLegend,'Interpreter','latex');
 title('Signal realizations at two stationary points');
 prepareFigure();
+
+
+% Plot Figures 1 and 2 on the same plot
+figure(3);
+plot(...
+    xx,dFun(thetaTrue),'o',...
+    xx,dFun(thetaLocalMin),'x',...
+    xx,d,'-',...
+    xx,dFun(thetaLocalMin,false),'--');
+ylim([-4 4]);
+xlabel('x');
+hLegend = legend({...
+    '$d(\theta_0)$',...
+    '$d(\hat\theta):  \hat\theta \neq \theta_0$',...
+    '$E[d(\theta_0)]$',...
+    '$E[d(\hat\theta)]:  \hat\theta \neq \theta_0$'});
+set(hLegend,'Interpreter','latex');
+title('Signal at two stationary points');
+prepareFigure();
+
+
+% Plot the objective function
+figure(4);
+tt = linspace(0,4*pi,500);
+ll = arrayfun(Lambda,tt);
+plot(tt,ll);
+xlim([0 4*pi]);
+temp = ylim;
+hold on
+h = plot(...
+    [thetaLocalMin thetaLocalMin],temp,'--r',...
+    [thetaTrue thetaTrue],temp,'--r');
+hold off;
+axis tight
+title('Negative Log-Likelihood');
+prepareFigure();
+
 
 % Find a helpful nonparametric embedding
 nominalParameters = linspace(0,4*pi,50);
