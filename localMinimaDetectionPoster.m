@@ -68,8 +68,8 @@ plot(...
 xlabel('x');
 ylabel('E[d]');
 hLegend = legend({...
-    '$E[d(\theta_0)]$',...
-    '$E[d(\hat\theta)]:  \hat\theta \neq \theta_0$' });
+    '$\mu: \theta = \theta_0$',...
+    '$\mu: \theta = \hat\theta$' });
 set(hLegend,'Interpreter','latex');
 title('Expected signal at two stationary points');
 prepareFigure();
@@ -84,8 +84,8 @@ ylim([-4 4]);
 xlabel('x');
 ylabel('d');
 hLegend = legend({...
-    '$d(\theta_0)$',...
-    '$d(\hat\theta):  \hat\theta \neq \theta_0$' });
+    '$d: \theta = \theta_0$',...
+    '$d: \theta = \hat\theta$' });
 set(hLegend,'Interpreter','latex');
 title('Signal realizations at two stationary points');
 prepareFigure();
@@ -94,17 +94,17 @@ prepareFigure();
 % Plot Figures 1 and 2 on the same plot
 figure(3);
 plot(...
-    xx,dFun(thetaTrue),'o',...
-    xx,dFun(thetaLocalMin),'x',...
-    xx,d,'-',...
-    xx,dFun(thetaLocalMin,false),'--');
+    xx,dFun(thetaTrue),'bo',...
+    xx,dFun(thetaLocalMin),'rx',...
+    xx,d,'b-',...
+    xx,dFun(thetaLocalMin,false),'r--');
 ylim([-4 4]);
 xlabel('x');
 hLegend = legend({...
-    '$d(\theta_0)$',...
-    '$d(\hat\theta):  \hat\theta \neq \theta_0$',...
-    '$E[d(\theta_0)]$',...
-    '$E[d(\hat\theta)]:  \hat\theta \neq \theta_0$'});
+    '$d: \theta = \theta_0$',...
+    '$d: \theta = \hat\theta$',...
+    '$\mu: \theta = \theta_0$',...
+    '$\mu: \theta = \hat\theta$'});
 set(hLegend,'Interpreter','latex');
 title('Signal at two stationary points');
 prepareFigure();
@@ -140,8 +140,9 @@ if numRelaxationDims
     figure(3);
     plot(xx,B);
     xlabel('x');
-    ylabel('Relaxation Basis');
-    title('Relaxation Basis Functions');
+    ylabel('r');
+    title('Embedding basis determined by Algorithm 1');
+    grid on
     prepareFigure();
 end
 
@@ -154,14 +155,44 @@ if numRelaxationDims==1
     plotRelaxationObjectiveSpace(xx,dFunB,thetaLocalMin,thetaTrue,sigmaN);
 end
 
+% Note: Right here is where you can change the model from naive to the
+% algorithmically selected relaxation.  This code was used for lots of plots and
+% diagnostics so it has a lot of switches.  By changing the forward model from
+% dFun to dFunB you are using the "basis" version.  You can use any basis you
+% want, but in the paper I show one way to find "good" ones.  
+%
+% Thanks for checking out the code, and if you have ideas on how to either get
+% better relaxation bases to prove the ones I have are are in some sense the 
+% best, let me know.  I've started a proof along these lines, but chose to
+% abandon it in favor of a simpler paper because it was clear from our reviewers
+% that we were struggling to communicate even the basic ideas -- writing is hard.  
+
+% dFun = dFunB;
+
+
 % Setup the tests.  The argument to leblancTest is the number
 testArray = {@biernackiTest, leblancTest(numRelaxationDims)};
-
 if numRelaxationDims>0
     testNameArray = {'Biernacki',sprintf('leblanc(%g)',numRelaxationDims)};
 else
-    testNameArray = {'Biernacki','Biernacki one-sided'};
+    testNameArray = {'Biernacki [4]','Proposed one-sided'};
 end
+
+
+% Note: This is how I configured the script to merge what was once 3 different
+% plots.  Originally, the paper threaded the simple example through all of the
+% theoretical discussion.  Ultimately, we decided to condense all of the example
+% discussion into a single section/plot.  Below is how I configured the script
+% to do this.  I ran the final curve separately and added it 
+% (see above w/ dFun = dFunB)
+
+if false
+    testArray = {@biernackiTest, leblancTest(0), leblancTest(1),...
+        leblancTest(3)};
+    testNameArray = {'Biernacki [4]','Proposed one-sided','Proposed k=1',...
+        'Proposed k=3'};
+end
+
 
 disp('Running Monte Simulations...');
 for testInd = 1:numel(testArray)
@@ -210,7 +241,7 @@ for testInd = 1:numel(testArray)
     plot(PFA(:,testInd),PD(:,testInd));
     xlabel('PFA');
     ylabel('PD');
-    title(sprintf('Local minima detection performance (%s)',...
+    title(sprintf('Global Optimum Detection Performance (%s)',...
         testName));
     prepareFigure();
     
@@ -221,7 +252,7 @@ figure();
 plot(PFA,PD);
 xlabel('PFA');
 ylabel('PD');
-title('Local minima detection performance');
+title('Global Maximum Detection Performance');
 grid on
 legend(testNameArray);
 prepareFigure;
@@ -231,7 +262,7 @@ semilogx(PFA,PD);
 xlim([10/numTrials 1]);
 xlabel('log_{10} PFA');
 ylabel('PD');
-title('Local minima detection performance');
+title('Global Maximum Detection Performance');
 grid on
 legend(testNameArray);
 prepareFigure;
@@ -552,15 +583,15 @@ EmEllHat = p/2 + p*log(sigmaN) + p*log(2*pi)/2;
 % Determine how much of the relaxed dimension we need to insert to reach a minima
 x0 = 1;
 [xMin,fVal] = fminsearch(@(x)EmEll([thetaLocal,x]),x0);
-relaxLim = [0 1.5*abs(xMin)];       % Should start at 0 and go positive
+relaxLim = [0 2*abs(xMin)];       % Should start at 0 and go positive for plotting
 relaxSign = sign(xMin);
 
 % Determine limits for the natural space
 delta = abs(thetaTrue - thetaLocal);
 if thetaLocal<thetaTrue
-    canonLim = [thetaLocal-.2*delta thetaTrue+.2*delta];
+    canonLim = [thetaLocal-.03*delta thetaTrue+.2*delta];
 else
-    canonLim = [thetaTrue-.2*delta thetaLocal+.2*delta];
+    canonLim = [thetaTrue-.03*delta thetaLocal+.2*delta];
 end
 
 % Evaluate the surface
@@ -621,18 +652,32 @@ grid off
 set(hAxes,'XDir','reverse');
 
 levelList = get(h(2),'LevelList');
-set(h(2),'LevelList',linspace(levelList(1),levelList(end),6));
+set(h(2),'LevelList',linspace(levelList(1),levelList(end),10));
 set(h(2),'LineWidth',2);
 
-view(82,16);
+view(82,40);
+caxis([130 210]);   % Colors
 set(hAxes,'Color','none');
 prepareFigure();
+
+[minCurve,minCurveInd] = min(EmEllArray,[],2);
+minTheta2 = relaxSign*theta2Array(minCurveInd);
 
 hold on
 h2 = plot3(zeros(1,numGridPoints),theta1Array,EmEllArray(:,1),'-b');
 set(h2,'LineWidth',3);
-h3 = plot3(zeros(1,numGridPoints),theta1Array,min(EmEllArray,[],2)-delta,'-g');
+h3 = plot3(zeros(1,numGridPoints),theta1Array,minCurve,'-g');
 set(h3,'LineWidth',3);
+h4 = plot3(minTheta2,theta1Array,minCurve,'--g');
+set(h4,'LineWidth',3);
+hold off
+
+% I used "parts" of this plot to place a transparent plane in front for improved
+% visibility
+xLimits = xlim();
+yLimits = ylim();
+zLimits = zlim();
+
 
 end
 
