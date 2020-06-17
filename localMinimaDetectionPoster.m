@@ -35,6 +35,10 @@
 %   adjustment leads to a dominating test.  For high integers, this is the
 %   number of non-parametrically determined relaxation dims to be used in
 %   conjunction with a one-sided Biernacki test.
+%
+%   Whether one searches the entire relaxed space, or only the relaxation
+%   dimensions appended to the canonical repsresentaion, is controlled by the
+%   variable 'searchThetaPrimeOnly' in the subfunction leblancTest.
 %-------------------------------------------------------------------------------
 %}
 function localMinimaDetectionPoster()
@@ -791,6 +795,10 @@ end
 numTrials = 50;
 sigmaN = 1;     % <- Function is invariant to this
 
+% Thrm. 2 yields a nicer theoretical result if this restriction is in place
+% Default: false
+searchThetaPrimeOnly = false;   
+
 % Get the log-likelihood value at the estimate
 Lambda = getLambda(dFun,d,sigmaN);
 f = Lambda(thetaHat);
@@ -830,6 +838,13 @@ end
 LBFGSOpts = LBFGSOptions();
 LBFGSOpts.initStep = .1;
 theta0 = [thetaHat ; zeros(numDims,1)];
+
+if searchThetaPrimeOnly
+    % Precondition out dimensions we don't want to search
+    LBFGSOpts.precond = zeros(size(theta0));
+    LBFGSOpts.precond(end-numDims+1:end) = 1;
+    warning('off','processPrecond:dimRemoved');
+end
 
 % Re-run the Monte-Carlo trials to get the log-likelihood under relaxation
 rng(rngState);
